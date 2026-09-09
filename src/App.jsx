@@ -36,6 +36,8 @@ const PAY = {
   holder:  envOr(import.meta.env.VITE_BANK_HOLDER,  "chủ tài khoản"),
   account: envOr(import.meta.env.VITE_BANK_ACCOUNT, "số tài khoản"),
 };
+// Số dòng tối đa nhập được (thùng hàng lẻ / pallet), dùng cho cả nút "+ Thêm" và dán từ Excel
+const MAX_ROWS = 50;
 // Trọng lượng pallet trừ ra khi tính theo KG (quy ước nội bộ, không có trong PDF)
 const PALLET_TARE_KG = 20;
 
@@ -130,6 +132,13 @@ function PrintView({ data, onClose }) {
           #print-area{display:block!important;position:static!important;width:100%!important;max-width:100%!important;padding:14px 24px!important;background:#fff!important;color:#111!important;font-family:Arial,sans-serif!important}
           #print-area *{font-family:Arial,sans-serif!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
           .no-print{display:none!important}
+          /* Đơn nhiều thùng tràn sang trang sau: giữ dòng không bị cắt ngang,
+             lặp header bảng ở mỗi trang, không để tiêu đề mục trơ cuối trang */
+          #print-area table{page-break-inside:auto}
+          #print-area thead{display:table-header-group}
+          #print-area tr{page-break-inside:avoid;break-inside:avoid}
+          #print-area h1,#print-area h2{page-break-after:avoid}
+          @page{margin:12mm 10mm}
         }
       `}</style>
       <div className="no-print" style={{maxWidth:760,margin:"0 auto 12px",display:"flex",justifyContent:"space-between",padding:"0 4px"}}>
@@ -433,7 +442,7 @@ export default function App() {
       const [l,w,h,actual]=cols;
       parsed.push({l:toNum(l),w:toNum(w),h:toNum(h),actual:toNum(actual)});
     }
-    const max = mode==="le" ? 20 : 20;
+    const max = MAX_ROWS;
     const needed=Math.min(parsed.length,max);
     if(mode==="le"){
       setLeBoxes(prev=>{
@@ -710,15 +719,15 @@ export default function App() {
               </div>
 
               <div style={{display:"flex",gap:8,marginBottom:16}}>
-                <button onClick={()=>{if(leBoxes.length<20)setLeBoxes(b=>[...b,mkLe(b.length+1)]);}} disabled={leBoxes.length>=20}
-                  style={{padding:"8px 18px",borderRadius:9,border:"1.5px solid #86efac",background:leBoxes.length>=20?"#f8fafc":"#f0fdf4",color:leBoxes.length>=20?G.mutedLight:G.primary,fontSize:12,fontWeight:600,cursor:leBoxes.length>=20?"not-allowed":"pointer"}}>
-                  + Thêm thùng{leBoxes.length>=20&&" (tối đa 20)"}
+                <button onClick={()=>{if(leBoxes.length<MAX_ROWS)setLeBoxes(b=>[...b,mkLe(b.length+1)]);}} disabled={leBoxes.length>=MAX_ROWS}
+                  style={{padding:"8px 18px",borderRadius:9,border:"1.5px solid #86efac",background:leBoxes.length>=MAX_ROWS?"#f8fafc":"#f0fdf4",color:leBoxes.length>=MAX_ROWS?G.mutedLight:G.primary,fontSize:12,fontWeight:600,cursor:leBoxes.length>=MAX_ROWS?"not-allowed":"pointer"}}>
+                  + Thêm thùng{leBoxes.length>=MAX_ROWS&&` (tối đa ${MAX_ROWS})`}
                 </button>
                 {leBoxes.length>1&&<button onClick={()=>setLeBoxes(b=>b.slice(0,-1))}
                   style={{padding:"8px 18px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:G.muted,fontSize:12,fontWeight:600,cursor:"pointer"}}>
                   − Xóa thùng cuối
                 </button>}
-                <div style={{marginLeft:"auto",fontSize:11,color:G.muted,alignSelf:"center"}}>{leBoxes.length} thùng · tối đa 20</div>
+                <div style={{marginLeft:"auto",fontSize:11,color:G.muted,alignSelf:"center"}}>{leBoxes.length} thùng · tối đa {MAX_ROWS}</div>
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}>
@@ -791,15 +800,15 @@ export default function App() {
               </div>
 
               <div style={{display:"flex",gap:8,marginBottom:16}}>
-                <button onClick={()=>{if(palBoxes.length<20)setPalBoxes(b=>[...b,mkPal(b.length+1)]);}} disabled={palBoxes.length>=20}
-                  style={{padding:"8px 18px",borderRadius:9,border:"1.5px solid #86efac",background:palBoxes.length>=20?"#f8fafc":"#f0fdf4",color:palBoxes.length>=20?G.mutedLight:G.primary,fontSize:12,fontWeight:600,cursor:palBoxes.length>=20?"not-allowed":"pointer",transition:"all .15s"}}>
-                  + Thêm pallet{palBoxes.length>=20&&" (tối đa 20)"}
+                <button onClick={()=>{if(palBoxes.length<MAX_ROWS)setPalBoxes(b=>[...b,mkPal(b.length+1)]);}} disabled={palBoxes.length>=MAX_ROWS}
+                  style={{padding:"8px 18px",borderRadius:9,border:"1.5px solid #86efac",background:palBoxes.length>=MAX_ROWS?"#f8fafc":"#f0fdf4",color:palBoxes.length>=MAX_ROWS?G.mutedLight:G.primary,fontSize:12,fontWeight:600,cursor:palBoxes.length>=MAX_ROWS?"not-allowed":"pointer",transition:"all .15s"}}>
+                  + Thêm pallet{palBoxes.length>=MAX_ROWS&&` (tối đa ${MAX_ROWS})`}
                 </button>
                 {palBoxes.length>1&&<button onClick={()=>setPalBoxes(b=>b.slice(0,-1))}
                   style={{padding:"8px 18px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:G.muted,fontSize:12,fontWeight:600,cursor:"pointer",transition:"all .15s"}}>
                   − Xóa pallet cuối
                 </button>}
-                <div style={{marginLeft:"auto",fontSize:11,color:G.muted,alignSelf:"center"}}>{palBoxes.length} pallet · tối đa 20</div>
+                <div style={{marginLeft:"auto",fontSize:11,color:G.muted,alignSelf:"center"}}>{palBoxes.length} pallet · tối đa {MAX_ROWS}</div>
               </div>
 
               {/* Internal summary: both methods side by side */}
@@ -1113,7 +1122,7 @@ export default function App() {
               <div style={{fontSize:15}}>🖨️</div>
               <div style={{fontSize:13,fontWeight:700,color:G.primary,marginTop:3}}>Xem & In bản tính phí</div>
               <div style={{fontSize:11,color:G.muted,marginTop:2}}>
-                1 trang A4 · Font Arial · Theme xanh KDEXPRESS
+                Khổ A4 · Font Arial · Theme xanh KDEXPRESS
                 {mode==="pallet"&&<span style={{marginLeft:4,color:G.primary,fontWeight:600}}>· In theo {palPrintMethod==="cbm"?"CBM":"KG"}</span>}
               </div>
             </div>
