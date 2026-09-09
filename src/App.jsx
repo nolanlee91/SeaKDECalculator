@@ -191,7 +191,7 @@ function PrintView({ data, onClose }) {
               <div style={{marginBottom:12}}>
                 <PHead n={N_DIMS} title="Kích thước & Trọng lượng"/>
                 <table style={{width:"100%",borderCollapse:"collapse"}}>
-                  <thead><tr>{["Thùng","Dài","Rộng","Cao","Cân TT (kg)","Cân thực tế (kg)","Cân tính phí (kg)"].map((h,i)=><th key={i} style={th}>{h}</th>)}</tr></thead>
+                  <thead><tr>{["Thùng","Dài","Rộng","Cao","Cân thể tích (kg)","Cân thực tế (kg)","Cân tính phí (kg)"].map((h,i)=><th key={i} style={th}>{h}</th>)}</tr></thead>
                   <tbody>
                     {leDataRows.map((b,i)=>(
                       <tr key={b.id} style={{background:i%2===0?"#f0fdf4":"#fff"}}>
@@ -418,6 +418,7 @@ export default function App() {
     return {...b,vol,act,chargeable};
   });
   const totalLeKG = leCalcs.reduce((s,b)=>s+(b.chargeable||0),0);
+  const totalLeActual = leCalcs.reduce((s,b)=>s+b.act,0);
   // Rate ghi đè đặc biệt: nếu bật & nhập số hợp lệ thì dùng, không thì tra bảng
   const ovRate = (raw) => { const n = parseFloat(raw); return overrideRate && raw!=="" && !isNaN(n) ? n : null; };
   // PDF: "Tối thiểu từ 25kg" — đơn nhẹ hơn vẫn tính tiền theo 25kg
@@ -746,7 +747,7 @@ export default function App() {
                 ))}
                 <div style={{display:"grid",gridTemplateColumns:"44px 72px 72px 72px 100px 100px 110px",padding:"10px 14px",background:"#f0fdf4",borderTop:"1px solid #bbf7d0"}}>
                   <div style={{fontSize:11,fontWeight:700,color:G.primary,gridColumn:"1/6"}}>TỔNG</div>
-                  <div/>
+                  <LTC val={totalLeActual>0?totalLeActual.toFixed(2)+" kg":null} G={G}/>
                   <LTC val={totalLeKG>0?totalLeKG.toFixed(2)+" kg":null} hi G={G}/>
                 </div>
               </div>
@@ -764,8 +765,8 @@ export default function App() {
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:14}}>
-                <LIC label="Tổng cân TT" value={`${leCalcs.reduce((s,b)=>s+b.vol,0).toFixed(2)} kg`} G={G}/>
-                <LIC label="Tổng cân thực tế" value={`${leCalcs.reduce((s,b)=>s+b.act,0).toFixed(2)} kg`} G={G}/>
+                <LIC label="Tổng cân thực tế" value={totalLeActual>0?`${totalLeActual.toFixed(2)} kg`:"—"} G={G}/>
+                <LIC label="Tổng cân tính phí" value={totalLeKG>0?`${totalLeKG.toFixed(2)} kg`:"—"} hi G={G}/>
                 <LIC label={`Rate · ${delivery}`} value={leRate?`$${leRate}/kg`:totalLeKG>0?"Liên hệ":"—"} hi G={G}/>
                 <LIC label={totalSurcharge>0||dutyCAD>0?`Tổng (CAD, gồm ${[totalSurcharge>0&&"phụ phí",dutyCAD>0&&"thuế"].filter(Boolean).join(" + ")})`:"Phí vận chuyển (CAD)"} value={leQuoteOnly?"Liên hệ báo giá":leTotalCAD>0?`$${fmtCAD(leTotalCAD)}`:"—"} hi G={G}/>
               </div>
