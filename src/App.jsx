@@ -82,11 +82,10 @@ function PrintView({ data, onClose }) {
     palTotalCBM_wood_VND, palTotalKG_wood_VND,
     includeWooden, palPrintMethod,
     surcharges = [],
-    invoices = [], totalInvoiceCAD = 0, taxPctNum = 0, dutyCAD = 0,
+    taxPctNum = 0, dutyCAD = 0,
     discountAmt = 0, discountNote = "",
   } = data;
   const surchargeRows = surcharges.filter(s => parseFloat(s.amount) > 0);
-  const invoiceRows = invoices.filter(iv => iv.val > 0);
 
   const isPrintCBM = palPrintMethod === "cbm";
   const palPrintCAD = isPrintCBM
@@ -194,9 +193,6 @@ function PrintView({ data, onClose }) {
                     <tr key={i}><td style={{...td,color:"#555"}}>+ {s.desc||"Phụ phí"}</td><td style={tdR}>${fmtCAD(parseFloat(s.amount))}</td></tr>
                   ))}
                   {dutyCAD>0&&(
-                    <tr><td style={{...td,color:"#555"}}>Giá trị hóa đơn ({invoiceRows.length} hóa đơn)</td><td style={tdR}>${fmtCAD(totalInvoiceCAD)}</td></tr>
-                  )}
-                  {dutyCAD>0&&(
                     <tr><td style={{...td,color:"#555"}}>+ Thuế nhập khẩu ({taxPctNum}%)</td><td style={tdR}>${fmtCAD(dutyCAD)}</td></tr>
                   )}
                   {discountAmt>0&&<tr><td style={{...td,color:"#c0392b"}}>− Giảm giá{discountNote?` (${discountNote})`:""}</td><td style={{...tdR,color:"#c0392b"}}>−${fmtCAD(discountAmt)}</td></tr>}
@@ -258,9 +254,6 @@ function PrintView({ data, onClose }) {
                   {surchargeRows.map((s,i)=>(
                     <tr key={i}><td style={{...td,color:"#555"}}>+ {s.desc||"Phụ phí"}</td><td style={tdR}>${fmtCAD(parseFloat(s.amount))}</td></tr>
                   ))}
-                  {dutyCAD>0&&(
-                    <tr><td style={{...td,color:"#555"}}>Giá trị hóa đơn ({invoiceRows.length} hóa đơn)</td><td style={tdR}>${fmtCAD(totalInvoiceCAD)}</td></tr>
-                  )}
                   {dutyCAD>0&&(
                     <tr><td style={{...td,color:"#555"}}>+ Thuế nhập khẩu ({taxPctNum}%)</td><td style={tdR}>${fmtCAD(dutyCAD)}</td></tr>
                   )}
@@ -470,7 +463,7 @@ export default function App() {
     palTotalCBM_wood_VND,palTotalKG_wood_VND,
     includeWooden, palPrintMethod,
     surcharges, totalSurcharge,
-    invoices:invoiceCalcs, totalInvoiceCAD, taxPctNum, dutyCAD,
+    taxPctNum, dutyCAD,
     discountAmt, discountNote,
   };
 
