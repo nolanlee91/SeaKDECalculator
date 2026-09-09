@@ -127,8 +127,14 @@ function PrintView({ data, onClose }) {
     <div id="print-root" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:1000,overflowY:"auto",padding:"24px 0"}}>
       <style>{`
         @media print {
-          html,body{background:#fff!important}body>*{display:none!important}
-          #print-root{display:block!important;position:fixed!important;inset:0!important;z-index:9999!important;background:#fff!important;overflow:visible!important;padding:0!important}
+          html,body{background:#fff!important;margin:0!important;height:auto!important;max-height:none!important;overflow:visible!important}
+          body>*{display:none!important}
+          /* PHẢI là static: phần tử position:fixed bị kẹp trong 1 trang khi in,
+             đơn nhiều thùng sẽ bị cắt mất phần thừa thay vì ngắt sang trang sau */
+          #print-root{display:block!important;position:static!important;
+            inset:auto!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+            width:auto!important;height:auto!important;max-height:none!important;
+            overflow:visible!important;z-index:auto!important;background:#fff!important;padding:0!important}
           #print-area{display:block!important;position:static!important;width:100%!important;max-width:100%!important;padding:14px 24px!important;background:#fff!important;color:#111!important;font-family:Arial,sans-serif!important}
           #print-area *{font-family:Arial,sans-serif!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
           .no-print{display:none!important}
