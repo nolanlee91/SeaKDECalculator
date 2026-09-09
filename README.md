@@ -26,6 +26,13 @@ Thông tin thanh toán không lưu trong repo. Xem [.env.example](.env.example) 
 > [!IMPORTANT]
 > Vite nhúng biến `VITE_*` vào bundle **lúc build**, không đọc lúc chạy. Phải khai báo đủ trên Railway (Service → Variables) **trước khi deploy**, và **build lại** sau mỗi lần đổi giá trị. Thiếu biến nào thì bản in hiện `(chưa cấu hình …)` ở chỗ đó.
 
+> [!NOTE]
+> Biến `VITE_*` bị nhúng vào file JS công khai, nên **không dùng để giữ bí mật** — ai xem source trang web cũng đọc được. Ở đây chỉ nhằm giữ số tài khoản ngoài repo. Thứ thật sự cần bí mật (API key, token) không được đặt tên `VITE_`.
+
+### Mã QR chuyển khoản
+
+Bản in có QR VietQR sinh từ `VITE_BANK_CODE` + `VITE_BANK_ACCOUNT` + `VITE_BANK_HOLDER`, lấy ảnh từ `img.vietqr.io`. Đây là **phụ thuộc mạng lúc xem/in** — máy không có internet thì chỗ đó là ảnh lỗi. Bỏ trống `VITE_BANK_CODE` thì QR tự ẩn, phần còn lại của bản in vẫn bình thường. QR không nhúng số tiền, khách tự nhập khi chuyển khoản.
+
 ## Triển khai (Railway)
 
 Đã cấu hình sẵn trong [railway.json](railway.json): Nixpacks, build `npm run build`, start `npm run start`.

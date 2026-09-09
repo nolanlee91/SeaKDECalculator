@@ -36,6 +36,20 @@ const PAY = {
   holder:  envOr(import.meta.env.VITE_BANK_HOLDER,  "chủ tài khoản"),
   account: envOr(import.meta.env.VITE_BANK_ACCOUNT, "số tài khoản"),
 };
+
+// ── QR CHUYỂN KHOẢN (VietQR) ──
+// Giống app Air: ảnh QR lấy từ img.vietqr.io. Cần mã ngân hàng riêng (vd "MB")
+// vì VITE_BANK_NAME là tên hiển thị cho người đọc, không phải mã VietQR.
+const BANK_CODE = (import.meta.env.VITE_BANK_CODE || "").trim();
+const RAW_ACCOUNT = (import.meta.env.VITE_BANK_ACCOUNT || "").trim();
+// VietQR cần tên chủ TK không dấu; "đ/Đ" không tách được bằng NFD nên xử lý riêng
+const noAccent = (s) => (s || "")
+  .replace(/đ/g, "d").replace(/Đ/g, "D")
+  .normalize("NFD").replace(/\p{Diacritic}/gu, "");
+const QR_SRC = BANK_CODE && RAW_ACCOUNT
+  ? `https://img.vietqr.io/image/${encodeURIComponent(BANK_CODE)}-${encodeURIComponent(RAW_ACCOUNT)}-compact2.png`
+    + `?accountName=${encodeURIComponent(noAccent(import.meta.env.VITE_BANK_HOLDER))}`
+  : null;
 // Số dòng tối đa nhập được (thùng hàng lẻ / pallet), dùng cho cả nút "+ Thêm" và dán từ Excel
 const MAX_ROWS = 50;
 // Trọng lượng pallet trừ ra khi tính theo KG (quy ước nội bộ, không có trong PDF)
@@ -312,10 +326,23 @@ function PrintView({ data, onClose }) {
                   <div style={{padding:"12px 14px",textAlign:"center",borderBottom:"1px solid #f0fdf4"}}>
                     <div style={{fontSize:payQuoteOnly?14:22,fontWeight:900,color:"#16a34a",letterSpacing:-.5,lineHeight:1.1}}>{payQuoteOnly?"Liên hệ báo giá":<>{fmtVND(payVND)} <span style={{fontSize:14,opacity:.7,color:"#16a34a"}}>₫</span></>}</div>
                   </div>
-                  <div style={{padding:"10px 14px",fontSize:10.5,color:"#444",lineHeight:1.6,flex:1}}>
-                    <div style={{color:"#888",marginBottom:3,fontSize:9.5,letterSpacing:.4,textTransform:"uppercase",fontWeight:600}}>{PAY.bank}</div>
-                    <div>Chủ TK: <strong style={{color:"#15803d"}}>{PAY.holder}</strong></div>
-                    <div>Số TK: <strong style={{color:"#15803d"}}>{PAY.account}</strong></div>
+                  <div style={{padding:"10px 14px",fontSize:10.5,color:"#444",lineHeight:1.6,flex:1,display:"flex",gap:10,alignItems:"flex-start"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{color:"#888",marginBottom:3,fontSize:9.5,letterSpacing:.4,textTransform:"uppercase",fontWeight:600}}>{PAY.bank}</div>
+                      <div>Chủ TK: <strong style={{color:"#15803d"}}>{PAY.holder}</strong></div>
+                      <div>Số TK: <strong style={{color:"#15803d"}}>{PAY.account}</strong></div>
+                      {QR_SRC&&<div style={{fontSize:9.5,color:"#16a34a",marginTop:2}}>← Quét QR để chuyển khoản nhanh</div>}
+                    </div>
+                    {QR_SRC&&(
+                      <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                        <div style={{background:"#fff",border:"2px solid #16a34a",borderRadius:7,padding:3,lineHeight:0}}>
+                          {/* Ảnh VietQR là 540×640 (chân dung). Để height:auto giữ nguyên tỉ lệ —
+                              ép vào ô vuông với object-fit:cover sẽ cắt mất đầu/chân ảnh
+                              và thu nhỏ vùng mã quét được. */}
+                          <img src={QR_SRC} alt={`QR chuyển khoản ${PAY.account}`} style={{width:86,height:"auto",display:"block",borderRadius:4}}/>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1128,7 +1155,7 @@ export default function App() {
               <div style={{fontSize:15}}>🖨️</div>
               <div style={{fontSize:13,fontWeight:700,color:G.primary,marginTop:3}}>Xem & In bản tính phí</div>
               <div style={{fontSize:11,color:G.muted,marginTop:2}}>
-                Khổ A4 · Font Arial · Theme xanh KDEXPRESS
+                Khổ A4 · Font Arial · Theme xanh KDEXPRESS{QR_SRC&&" · Có QR thanh toán"}
                 {mode==="pallet"&&<span style={{marginLeft:4,color:G.primary,fontWeight:600}}>· In theo {palPrintMethod==="cbm"?"CBM":"KG"}</span>}
               </div>
             </div>
