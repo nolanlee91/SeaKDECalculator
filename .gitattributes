@@ -1,0 +1,7 @@
+# Chuẩn hoá LF cả trong repo và khi checkout, không phụ thuộc core.autocrlf của từng máy.
+# Quan trọng với .nvmrc: nếu file này bị checkout thành CRLF trên Linux, Nixpacks
+# đọc ra "22\r" và không nhận ra phiên bản Node.
+* text=auto eol=lf
+
+*.png binary
+*.pdf binary
