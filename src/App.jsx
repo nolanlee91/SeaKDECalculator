@@ -58,6 +58,10 @@ const PALLET_TARE_KG = 20;
 // Cân tính phí làm tròn LÊN theo bước 0.5kg (18.23 → 18.5, không phải 18).
 // Epsilon để số chia chẵn không bị đẩy lên bậc trên do sai số dấu phẩy động.
 const roundUp05 = (v) => Math.ceil(v * 2 - 1e-9) / 2;
+// Số khối làm tròn LÊN 2 chữ số thập phân, cùng nguyên tắc với cân tính phí
+const roundUp2 = (v) => Math.ceil(v * 100 - 1e-9) / 100;
+// Cộng các số đã tròn 2 chữ số: chỉ để khử sai số dấu phẩy động (0.84×3 = 2.5199…)
+const round2 = (v) => Math.round(v * 100) / 100;
 
 // Định dạng tiền tệ: CAD làm tròn đến đơn vị ($), VNĐ làm tròn đến hàng nghìn
 const fmtCAD = (v) => Math.round(v || 0).toLocaleString("en-US");
@@ -111,7 +115,7 @@ function PrintView({ data, onClose }) {
     ? (includeWooden ? palTotalCBM_wood_VND : palTotalCBM_VND)
     : (includeWooden ? palTotalKG_wood_VND  : palTotalKG_VND);
   const palPrintShipCAD = isPrintCBM ? palShipCBM_CAD : palShipKG_CAD;
-  const palPrintQty  = isPrintCBM ? `${palBillCBM.toFixed(4)} CBM` : `${totalPalKG.toFixed(1)} kg`;
+  const palPrintQty  = isPrintCBM ? `${palBillCBM.toFixed(2)} CBM` : `${totalPalKG.toFixed(1)} kg`;
   const palPrintRate = isPrintCBM ? palRateCBM : palRateKG;
   const palPrintRateLabel = palPrintRate
     ? (isPrintCBM ? `$${palPrintRate}/CBM` : `$${palPrintRate}/kg`)
@@ -245,14 +249,14 @@ function PrintView({ data, onClose }) {
                       <tr key={b.id} style={{background:i%2===0?"#f0fdf4":"#fff"}}>
                         <td style={tdC}>P.{b.id}</td>
                         <td style={tdC}>{b.l||"—"}</td><td style={tdC}>{b.w||"—"}</td><td style={tdC}>{b.h||"—"}</td>
-                        <td style={{...tdC,fontWeight:600}}>{b.cbm>0?b.cbm.toFixed(4):"—"}</td>
+                        <td style={{...tdC,fontWeight:600}}>{b.cbm>0?b.cbm.toFixed(2):"—"}</td>
                         <td style={tdC}>{b.act>0?b.act.toFixed(1):"—"}</td>
                         <td style={{...tdC,color:b.net!==null&&b.net<0?"#c0392b":"#15803d",fontWeight:700}}>{b.net!==null?b.net.toFixed(1):"—"}</td>
                       </tr>
                     ))}
                     <tr style={{background:"#dcfce7"}}>
                       <td colSpan={4} style={{...td,fontWeight:700,textAlign:"right",color:"#15803d"}}>Tổng</td>
-                      <td style={{...tdC,fontWeight:700,color:"#15803d"}}>{totalCBM>0?totalCBM.toFixed(4):"—"}</td>
+                      <td style={{...tdC,fontWeight:700,color:"#15803d"}}>{totalCBM>0?totalCBM.toFixed(2):"—"}</td>
                       <td style={tdC}/>
                       <td style={{...tdC,fontWeight:700,color:"#15803d"}}>{totalPalKG>0?totalPalKG.toFixed(1):"—"}</td>
                     </tr>
@@ -269,7 +273,7 @@ function PrintView({ data, onClose }) {
                     <tr><td style={{...td,color:"#555"}}>{isPrintCBM?"Tổng số khối":"Tổng cân trừ pallet"}</td><td style={tdR}>{palPrintQty}</td></tr>
                   )}
                   {isPrintCBM&&palMinCBMApplied&&(
-                    <tr><td style={{...td,color:"#555"}}>Áp mức tối thiểu {MIN_PAL_CBM} CBM (thực tế {totalCBM.toFixed(4)})</td><td style={tdR}>{palBillCBM.toFixed(4)} CBM</td></tr>
+                    <tr><td style={{...td,color:"#555"}}>Áp mức tối thiểu {MIN_PAL_CBM} CBM (thực tế {totalCBM.toFixed(2)})</td><td style={tdR}>{palBillCBM.toFixed(2)} CBM</td></tr>
                   )}
                   {((isPrintCBM&&totalCBM>0)||(!isPrintCBM&&totalPalKG>0))&&(
                     <tr><td style={{...td,color:"#555"}}>Rate {isPrintCBM?"CBM":"KG"} ({delivery})</td><td style={tdR}>{palPrintRateLabel}</td></tr>
@@ -433,12 +437,12 @@ export default function App() {
   // ── PALLET CALCS ──
   const palCalcs = palBoxes.map(b=>{
     const l=parseFloat(b.l)||0, w=parseFloat(b.w)||0, h=parseFloat(b.h)||0, act=parseFloat(b.actual)||0;
-    const cbm=l*w*h/1000000;
+    const cbm=roundUp2(l*w*h/1000000);
     // Pallet nhẹ hơn tare không được trừ ngược vào tổng cân của các pallet khác
     const net=act>0?Math.max(0,act-PALLET_TARE_KG):null;
     return {...b,cbm,act,net};
   });
-  const totalCBM = palCalcs.reduce((s,b)=>s+b.cbm,0);
+  const totalCBM = round2(palCalcs.reduce((s,b)=>s+b.cbm,0));
   const totalPalKG = palCalcs.reduce((s,b)=>s+(b.net||0),0);
   // Bảng CBM bắt đầu từ 1 CBM → dưới 1 CBM vẫn tính tiền theo 1 CBM
   const palBillCBM = totalCBM > 0 ? Math.max(totalCBM, MIN_PAL_CBM) : 0;
@@ -818,7 +822,7 @@ export default function App() {
                         <LTI value={palBoxes[idx][dim]} onChange={v=>updatePalBox(idx,dim,v)} placeholder="0" w={68} G={G}/>
                       </div>
                     ))}
-                    <LTC val={box.cbm>0?box.cbm.toFixed(4)+" m³":null} hi G={G}/>
+                    <LTC val={box.cbm>0?box.cbm.toFixed(2)+" m³":null} hi G={G}/>
                     <div style={{display:"flex",justifyContent:"center"}}>
                       <LTI value={palBoxes[idx].actual} onChange={v=>updatePalBox(idx,"actual",v)} placeholder="0" w={80} G={G}/>
                     </div>
@@ -827,7 +831,7 @@ export default function App() {
                 ))}
                 <div style={{display:"grid",gridTemplateColumns:"50px 80px 80px 80px 100px 110px 120px",padding:"10px 14px",background:"#f0fdf4",borderTop:"1px solid #bbf7d0"}}>
                   <div style={{fontSize:11,fontWeight:700,color:G.primary,gridColumn:"1/5"}}>TỔNG</div>
-                  <LTC val={totalCBM>0?totalCBM.toFixed(4)+" m³":null} hi G={G}/>
+                  <LTC val={totalCBM>0?totalCBM.toFixed(2)+" m³":null} hi G={G}/>
                   <div/>
                   <LTC val={totalPalKG>0?totalPalKG.toFixed(1)+" kg":null} hi G={G}/>
                 </div>
@@ -851,14 +855,14 @@ export default function App() {
                 <div style={{background:"linear-gradient(135deg,#f0fdf4,#dcfce7)",borderRadius:16,border:"1.5px solid #86efac",padding:18}}>
                   <div style={{fontSize:11,fontWeight:700,color:G.primary,textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Tính theo CBM</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                    <LIC label="Tổng CBM" value={totalCBM>0?`${totalCBM.toFixed(4)} m³`:"—"} G={G}/>
+                    <LIC label="Tổng CBM" value={totalCBM>0?`${totalCBM.toFixed(2)} m³`:"—"} G={G}/>
                     <LIC label={`Rate (${delivery})`} value={palRateCBM?`$${palRateCBM}/CBM`:"—"} hi G={G}/>
                   </div>
                   {palMinCBMApplied&&<div style={{marginBottom:8,padding:"8px 12px",background:"#fff7ed",borderRadius:8,border:"1px solid #fed7aa",fontSize:11.5,color:"#c2410c"}}>
-                    Dưới mức tối thiểu — tính phí theo <strong>{MIN_PAL_CBM} CBM</strong> (thực tế {totalCBM.toFixed(4)})
+                    Dưới mức tối thiểu — tính phí theo <strong>{MIN_PAL_CBM} CBM</strong> (thực tế {totalCBM.toFixed(2)})
                   </div>}
                   {includeWooden&&<div style={{marginBottom:8,padding:"8px 12px",background:"#fff7ed",borderRadius:8,border:"1px solid #fed7aa",fontSize:11.5,color:"#c2410c"}}>
-                    + Kiện gỗ: ${fmtCAD(woodenFee)} ({WOODEN_CRATE_RATE}$/CBM × {totalCBM.toFixed(4)})
+                    + Kiện gỗ: ${fmtCAD(woodenFee)} ({WOODEN_CRATE_RATE}$/CBM × {totalCBM.toFixed(2)})
                   </div>}
                   <div style={{borderTop:"1px solid #86efac",paddingTop:10,textAlign:"center"}}>
                     <div style={{fontSize:10,color:G.muted,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Tổng (CAD)</div>
@@ -877,7 +881,7 @@ export default function App() {
                     Từ 1500kg — bảng giá yêu cầu <strong>liên hệ để được báo giá</strong>
                   </div>}
                   {includeWooden&&<div style={{marginBottom:8,padding:"8px 12px",background:"#fff7ed",borderRadius:8,border:"1px solid #fed7aa",fontSize:11.5,color:"#c2410c"}}>
-                    + Kiện gỗ: ${fmtCAD(woodenFee)} ({WOODEN_CRATE_RATE}$/CBM × {totalCBM.toFixed(4)})
+                    + Kiện gỗ: ${fmtCAD(woodenFee)} ({WOODEN_CRATE_RATE}$/CBM × {totalCBM.toFixed(2)})
                   </div>}
                   <div style={{borderTop:"1px solid #86efac",paddingTop:10,textAlign:"center"}}>
                     <div style={{fontSize:10,color:G.muted,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Tổng (CAD)</div>
@@ -910,7 +914,7 @@ export default function App() {
                     <div style={{borderTop:"1px solid",borderColor:palPrintMethod==="cbm"?"#86efac":"#e2e8f0",paddingTop:8}}>
                       <div style={{fontSize:10,color:G.muted,marginBottom:2}}>Sẽ in trên báo giá</div>
                       <div style={{fontSize:18,fontWeight:800,color:palPrintMethod==="cbm"?G.primary:G.mutedLight}}>${fmtCAD(includeWooden?palTotalCBM_wood_CAD:palTotalCBM_CAD)}</div>
-                      <div style={{fontSize:11,color:G.muted,marginTop:1}}>{totalCBM>0&&palRateCBM?`${palBillCBM.toFixed(4)} CBM × ${palRateCBM}`:"—"}</div>
+                      <div style={{fontSize:11,color:G.muted,marginTop:1}}>{totalCBM>0&&palRateCBM?`${palBillCBM.toFixed(2)} CBM × ${palRateCBM}`:"—"}</div>
                     </div>
                   </div>
                   {/* KG option */}
